@@ -1,0 +1,6 @@
+{
+  "version": 2,
+  "env": {
+    "NEXTAUTH_SECRET": "your-super-secret-key-for-production-deployment-2024"
+  }
+}
