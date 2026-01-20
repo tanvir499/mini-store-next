@@ -15,6 +15,14 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "MiniStore - Your Electronics Store",
   description: "Quality electronics and accessories at great prices",
+  icons: {
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ],
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
+  },
 };
 
 export default function RootLayout({

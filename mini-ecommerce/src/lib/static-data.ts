@@ -1,7 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+// Static data for client-side operations (Netlify deployment)
+export interface Item {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category?: string;
+  image: string;
+}
 
-// In-memory data storage (in production, use a database)
-export let items = [
+export const STATIC_ITEMS: Item[] = [
   // Audio Category
   {
     id: '1',
@@ -35,6 +42,22 @@ export let items = [
     category: 'Audio',
     image: 'https://images.unsplash.com/photo-1599669454699-248893623440?w=500&h=500&fit=crop'
   },
+  {
+    id: '14',
+    name: 'Studio Monitor Speakers',
+    description: 'High-fidelity studio monitors for professional audio production',
+    price: 349.99,
+    category: 'Audio',
+    image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=500&h=500&fit=crop'
+  },
+  {
+    id: '15',
+    name: 'Soundbar',
+    description: 'Premium soundbar with wireless subwoofer and Dolby Atmos',
+    price: 299.99,
+    category: 'Audio',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=500&fit=crop'
+  },
 
   // Wearables Category
   {
@@ -53,6 +76,14 @@ export let items = [
     category: 'Wearables',
     image: 'https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=500&h=500&fit=crop'
   },
+  {
+    id: '19',
+    name: 'Smart Ring',
+    description: 'Titanium smart ring with health monitoring and NFC payments',
+    price: 199.99,
+    category: 'Wearables',
+    image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=500&h=500&fit=crop'
+  },
 
   // Electronics Category
   {
@@ -70,6 +101,14 @@ export let items = [
     price: 34.99,
     category: 'Electronics',
     image: 'https://images.unsplash.com/photo-1609592806787-3d9c1b8e5e8e?w=500&h=500&fit=crop'
+  },
+  {
+    id: '23',
+    name: 'Smartphone Pro',
+    description: 'Latest flagship smartphone with triple camera and 5G connectivity',
+    price: 899.99,
+    category: 'Electronics',
+    image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&h=500&fit=crop'
   },
 
   // Accessories Category
@@ -104,34 +143,89 @@ export let items = [
     price: 129.99,
     category: 'Accessories',
     image: 'https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=500&h=500&fit=crop'
+  },
+  {
+    id: '9',
+    name: 'Tablet Stand',
+    description: 'Adjustable tablet stand for desk or bedside use',
+    price: 39.99,
+    category: 'Accessories',
+    image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&h=500&fit=crop'
+  },
+  {
+    id: '12',
+    name: 'Gaming Mouse Pad',
+    description: 'Large RGB gaming mouse pad with smooth surface',
+    price: 24.99,
+    category: 'Accessories',
+    image: 'https://images.unsplash.com/photo-1612198188060-c7c2a3b66eae?w=500&h=500&fit=crop'
   }
 ];
 
-// GET /api/items - fetch items with pagination and filtering
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '6');
-  const category = searchParams.get('category');
+// Client-side storage for new items (localStorage)
+const STORAGE_KEY = 'ministore_items';
+
+export const getStoredItems = (): Item[] => {
+  if (typeof window === 'undefined') return STATIC_ITEMS;
   
-  let filteredItems = items;
-  
-  // Filter by category if provided
-  if (category && category !== 'all') {
-    filteredItems = items.filter(item => 
-      item.category && item.category.toLowerCase() === category.toLowerCase()
-    );
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsedItems = JSON.parse(stored);
+      return [...STATIC_ITEMS, ...parsedItems];
+    }
+  } catch (error) {
+    console.error('Error reading from localStorage:', error);
   }
   
+  return STATIC_ITEMS;
+};
+
+export const addItemToStorage = (item: Omit<Item, 'id'>): Item => {
+  const newItem: Item = {
+    ...item,
+    id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  };
+
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const existingItems = stored ? JSON.parse(stored) : [];
+      const updatedItems = [...existingItems, newItem];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedItems));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  }
+
+  return newItem;
+};
+
+export const getItemById = (id: string): Item | null => {
+  const allItems = getStoredItems();
+  return allItems.find(item => item.id === id) || null;
+};
+
+export const getItemsByCategory = (category?: string): Item[] => {
+  const allItems = getStoredItems();
+  if (!category || category === 'all') {
+    return allItems;
+  }
+  return allItems.filter(item => 
+    item.category && item.category.toLowerCase() === category.toLowerCase()
+  );
+};
+
+export const getPaginatedItems = (page: number = 1, limit: number = 6, category?: string) => {
+  const filteredItems = getItemsByCategory(category);
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
-  
   const paginatedItems = filteredItems.slice(startIndex, endIndex);
   
   const totalItems = filteredItems.length;
   const totalPages = Math.ceil(totalItems / limit);
   
-  return NextResponse.json({
+  return {
     items: paginatedItems,
     pagination: {
       currentPage: page,
@@ -141,50 +235,5 @@ export async function GET(request: NextRequest) {
       hasNextPage: endIndex < totalItems,
       hasPrevPage: page > 1
     }
-  });
-}
-
-// POST /api/items - add new item
-export async function POST(request: NextRequest) {
-  try {
-    // Check authentication
-    const isAuthenticated = request.cookies.get('isAuthenticated')?.value === 'true';
-    if (!isAuthenticated) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const body = await request.json();
-    const { name, description, price, category, image } = body;
-    
-    if (!name || !description || !price) {
-      return NextResponse.json(
-        { error: 'Name, description, and price are required' },
-        { status: 400 }
-      );
-    }
-    
-    // Generate a unique ID based on current timestamp and random number
-    const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    const newItem = {
-      id: newId,
-      name,
-      description,
-      price: parseFloat(price),
-      category: category || 'Electronics',
-      image: image || 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=500&h=500&fit=crop'
-    };
-    
-    items.push(newItem);
-    
-    return NextResponse.json(newItem, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Invalid request body' },
-      { status: 400 }
-    );
-  }
-}
+  };
+};

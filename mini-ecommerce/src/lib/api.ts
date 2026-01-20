@@ -77,7 +77,11 @@ export const createItem = async (item: Omit<Item, 'id'>): Promise<Item> => {
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in.');
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
     
     return await response.json();

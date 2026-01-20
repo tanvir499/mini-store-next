@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { login, MOCK_CREDENTIALS } from '@/lib/auth';
 import toast from 'react-hot-toast';
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +23,10 @@ export default function LoginPage() {
       
       if (result.success) {
         toast.success(`Welcome back, ${result.user?.name}!`);
-        router.push('/items');
+        
+        // Redirect to the intended page or default to items
+        const redirectTo = searchParams.get('redirect') || '/items';
+        router.push(redirectTo);
       } else {
         toast.error('Invalid credentials. Please try again.');
       }
@@ -40,18 +44,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="mx-auto h-20 w-20 flex items-center justify-center mb-6">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="mx-auto h-16 w-16 sm:h-20 sm:w-20 flex items-center justify-center mb-4 sm:mb-6">
             <img 
               src="/logo.svg" 
               alt="MiniStore Logo" 
-              className="w-20 h-20 object-contain"
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain"
             />
           </div>
-          <h2 className="text-3xl font-bold mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">
             <span className="bg-gradient-to-r from-sky-400 to-sky-100 bg-clip-text text-transparent">
               Welcome back
             </span>
@@ -196,5 +200,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
